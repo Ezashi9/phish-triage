@@ -63,8 +63,9 @@ def main() -> None:
     ]
     for check in sorted(set(p_checks) | set(l_checks), key=lambda c: -p_checks[c]):
         lines.append(f"| {check} | {pct(p_checks[check], p_total)} | {pct(l_checks[check], l_total)} |")
-    (HERE / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (HERE / "results.json").write_text(json.dumps({
+    seed = manifest["phishing"]["seed"]
+    (HERE / f"RESULTS-seed{seed}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (HERE / f"results-seed{seed}.json").write_text(json.dumps({
         "phishing": {"verdicts": p_v, "checks": p_checks, "errors": p_err, "total": p_total},
         "legitimate": {"verdicts": l_v, "checks": l_checks, "errors": l_err, "total": l_total},
         "manifest": manifest,
