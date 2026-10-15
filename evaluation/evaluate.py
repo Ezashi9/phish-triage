@@ -38,7 +38,7 @@ def main() -> None:
     false_alarms = l_v["phishing"] + l_v["suspicious"]
 
     lines = [
-        "# Evaluation results",
+        f"# Evaluation results (phishing sample seed {manifest['phishing']['seed']})",
         "",
         f"Phishing sample: {manifest['phishing']['sample']} emails drawn at random (seed {manifest['phishing']['seed']}) from "
         f"{manifest['phishing']['total_in_repo']} in [{manifest['phishing']['repo']}](https://github.com/{manifest['phishing']['repo']}) "

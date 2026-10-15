@@ -1,4 +1,4 @@
-# Evaluation results
+# Evaluation results: first version (phishing sample seed 2026)
 
 Phishing sample: 300 emails drawn at random (seed 2026) from 12271 in [rf-peixoto/phishing_pot](https://github.com/rf-peixoto/phishing_pot) at commit `2933c0341b12`.  
 Legitimate sample: 2500 emails from the SpamAssassin public corpus (easy_ham, 2003).
