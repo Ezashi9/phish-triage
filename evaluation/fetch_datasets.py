@@ -6,6 +6,7 @@
 import http.client
 import io
 import json
+import os
 import random
 import tarfile
 import time
@@ -17,7 +18,7 @@ DATA = Path(__file__).resolve().parent / "data"
 PHISHING_REPO = "rf-peixoto/phishing_pot"
 PHISHING_COMMIT = "2933c0341b12"  # resolved to the full SHA at fetch time and recorded in manifest.json
 SAMPLE_SIZE = 300
-SEED = 2026
+SEED = int(os.environ.get("SAMPLE_SEED") or 2026)
 HAM_URL = "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham.tar.bz2"
 UA = {"User-Agent": "phish-triage evaluation (github.com/Ezashi9/phish-triage)"}
 

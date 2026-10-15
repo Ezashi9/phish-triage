@@ -4,6 +4,10 @@ name: Evaluate on real emails
 # Only aggregate results (RESULTS.md, results.json) are committed; the emails are not.
 on:
   workflow_dispatch:
+    inputs:
+      seed:
+        description: "Random seed for the phishing sample (2026 = tuning sample, 7 = held-out sample)"
+        default: "2026"
 
 permissions:
   contents: write
@@ -20,9 +24,13 @@ jobs:
       - name: Unit tests
         run: python -m unittest discover -s tests -t .
       - name: Download datasets
+        env:
+          SAMPLE_SEED: ${{ inputs.seed }}
         run: python -m evaluation.fetch_datasets
       - name: Evaluate
         run: python -m evaluation.evaluate
+      - name: Describe missed phishing (aggregate counts, log only)
+        run: python -m evaluation.analyse_misses
       - name: Publish results
         run: |
           git config user.name "github-actions[bot]"
