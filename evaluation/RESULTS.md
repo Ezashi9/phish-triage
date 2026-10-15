@@ -8,10 +8,10 @@ Legitimate sample: 2500 emails from the SpamAssassin public corpus (easy_ham, 20
 | Analysed | 300 | 2500 |
 | Could not parse | 0 | 0 |
 | Verdict: phishing | 35 (11.7%) | 1 (0.0%) |
-| Verdict: suspicious | 86 (28.7%) | 16 (0.6%) |
-| Verdict: likely safe | 179 (59.7%) | 2483 (99.3%) |
+| Verdict: suspicious | 87 (29.0%) | 16 (0.6%) |
+| Verdict: likely safe | 178 (59.3%) | 2483 (99.3%) |
 
-**Caught (phishing or suspicious): 40.3% of phishing emails.**  
+**Caught (phishing or suspicious): 40.7% of phishing emails.**  
 **False alarms (legitimate flagged phishing or suspicious): 0.7%.**
 
 ## Which checks fired
