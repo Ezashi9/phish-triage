@@ -1,14 +1,14 @@
 {
   "phishing": {
     "verdicts": {
-      "likely safe": 116,
-      "phishing": 94,
-      "suspicious": 90
+      "likely safe": 137,
+      "phishing": 78,
+      "suspicious": 85
     },
     "checks": {
-      "links": 76,
       "lookalike": 53,
-      "lure": 98,
+      "lure": 88,
+      "links": 76,
       "auth": 143,
       "sender": 121,
       "impersonation": 89,
@@ -21,15 +21,15 @@
   },
   "legitimate": {
     "verdicts": {
-      "likely safe": 2448,
-      "suspicious": 49,
-      "phishing": 3
+      "likely safe": 2478,
+      "suspicious": 21,
+      "phishing": 1
     },
     "checks": {
       "sender": 1593,
       "impersonation": 141,
       "links": 15,
-      "lure": 34,
+      "lure": 9,
       "language": 7,
       "lookalike": 7
     },
