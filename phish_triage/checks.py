@@ -69,7 +69,7 @@ PRESSURE_PHRASES = [
 LURE_PHRASES = [
     r"free spins", r"freispiele", r"casino", r"jackpot", r"\bbonus\b", r"claim (your|now)",
     r"(subscription|protection|antivirus) (has )?(expired|expires|renewal)", r"(seed|recovery) phrase",
-    r"(crypto|bitcoin|wallet) (reward|airdrop|bonus)", r"\bairdrop\b", r"(prize|winner|congratulations)",
+    r"(crypto|bitcoin|wallet) (reward|airdrop|bonus)", r"\bairdrop\b", r"you('ve| have) (won|been chosen)", r"claim (your|the) (prize|reward)", r"prize (draw|winner)",
 ]
 # Top-level domains that abuse researchers (e.g. Spamhaus) repeatedly list as heavily used for spam and phishing.
 HIGH_ABUSE_TLDS = {"icu", "top", "xyz", "site", "online", "fit", "click", "link", "work", "rest", "buzz",
@@ -241,13 +241,22 @@ def check_language(e: Email) -> list[Finding]:
 
 
 def check_body_impersonation(e: Email) -> list[Finding]:
-    """The email talks about a brand, but neither the sender nor any link belongs to that brand."""
-    text = f"{e.subject} {e.text} {re.sub(r'<[^>]+>', ' ', e.html)}"
-    mentioned = _brands_in(text) - _brands_in(e.from_name or "")
+    """The email presents itself as a brand (subject or link text), but no sender or link belongs to it.
+
+    A brand only mentioned somewhere in the body is weak evidence: newsletters and mailing lists
+    talk about Microsoft or Apple all the time without pretending to be them.
+    """
+    body = f"{e.text} {re.sub(r'<[^>]+>', ' ', e.html)}"
+    presented = _brands_in(e.subject) | _brands_in(" ".join(l.text for l in e.links))
+    mentioned = _brands_in(body)
     hosts = {l.host for l in e.links if l.host} | {e.from_domain}
-    for brand in sorted(mentioned):
+    already = _brands_in(e.from_name or "")
+    for brand in sorted(presented - already):
         if not any(_brand_owned(h, brand) for h in hosts if h):
-            return [Finding("impersonation", 20, f"Mentions '{brand}' but neither the sender nor any link belongs to {brand}")]
+            return [Finding("impersonation", 20, f"Presents itself as '{brand}' (subject or link text) but neither the sender nor any link belongs to {brand}")]
+    for brand in sorted(mentioned - presented - already):
+        if not any(_brand_owned(h, brand) for h in hosts if h):
+            return [Finding("impersonation", 5, f"Mentions '{brand}' in the body, but nothing in the email belongs to {brand}")]
     return []
 
 

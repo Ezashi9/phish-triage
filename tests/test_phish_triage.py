@@ -122,6 +122,14 @@ class TriageTests(unittest.TestCase):
                   html='<a href="https://renew.example.net/x">Renew</a>')
         self.assertIn("impersonation", checks_fired(raw))
 
+    def test_brand_in_subject_scores_more_than_body_mention(self):
+        def points(raw):
+            return sum(f.points for f in triage(parse_bytes(raw)).findings if f.check == "impersonation")
+        presented = eml({"From": "a@example.net", "Subject": "Your McAfee renewal"}, "Renew now")
+        mentioned = eml({"From": "a@example.net", "Subject": "Weekly tech news"}, "McAfee released an update today")
+        self.assertEqual(points(presented), 20)
+        self.assertEqual(points(mentioned), 5)
+
     def test_brand_mentioned_with_brand_links_is_fine(self):
         raw = eml({"From": "news@example.org"}, "We now accept PayPal.",
                   html='<a href="https://www.paypal.com/uk">PayPal</a>')
