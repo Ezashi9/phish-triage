@@ -112,6 +112,33 @@ class TriageTests(unittest.TestCase):
             with self.subTest(raw=raw[:20]):
                 triage(parse_bytes(raw))
 
+    def test_dmarc_pass_gives_no_credit(self):
+        # Attackers pass DMARC on domains they own, so passing must not lower the score.
+        raw = eml({"From": "a@example.com", "Authentication-Results": "mx; spf=pass; dkim=pass; dmarc=pass"}, "hi")
+        self.assertEqual(triage(parse_bytes(raw)).score, 0)
+
+    def test_brand_mentioned_in_body_but_not_owned(self):
+        raw = eml({"From": "renewals@example.net"}, "Your McAfee protection has expired. Renew today.",
+                  html='<a href="https://renew.example.net/x">Renew</a>')
+        self.assertIn("impersonation", checks_fired(raw))
+
+    def test_brand_mentioned_with_brand_links_is_fine(self):
+        raw = eml({"From": "news@example.org"}, "We now accept PayPal.",
+                  html='<a href="https://www.paypal.com/uk">PayPal</a>')
+        self.assertNotIn("impersonation", checks_fired(raw))
+
+    def test_lure_language(self):
+        raw = eml({"From": "a@example.com", "Subject": "Claim your 50 free spins"}, "Casino bonus waiting")
+        self.assertIn("lure", checks_fired(raw))
+
+    def test_abused_tld(self):
+        raw = eml({"From": "a@example.com"}, html='<a href="https://login.example.icu/x">x</a>')
+        self.assertIn("tld", checks_fired(raw))
+
+    def test_malformed_from_header_still_yields_sender(self):
+        e = parse_bytes(b"From: Support Team support@example.net (no brackets)\r\n\r\nhi")
+        self.assertEqual(e.from_domain, "example.net")
+
     def test_registrable_domain(self):
         self.assertEqual(registrable("mail.paypal.co.uk"), "paypal.co.uk")
         self.assertEqual(registrable("a.b.example.com"), "example.com")

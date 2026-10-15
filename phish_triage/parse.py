@@ -83,7 +83,14 @@ def parse_bytes(raw: bytes) -> Email:
     msg: EmailMessage = BytesParser(policy=policy.default).parsebytes(raw)
     e = Email()
     e.subject = str(msg.get("Subject", "") or "")
-    e.from_name, e.from_addr = parseaddr(str(msg.get("From", "") or ""))
+    raw_from = str(msg.get("From", "") or "")
+    e.from_name, e.from_addr = parseaddr(raw_from)
+    if "@" not in e.from_addr:
+        # Malformed From headers are common in phishing; fall back to the last address-like string.
+        found = re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", raw_from)
+        if found:
+            e.from_addr = found[-1]
+            e.from_name = raw_from.replace(found[-1], "").strip(' <>"')
     e.reply_to = [addr for _, addr in getaddresses([str(v) for v in msg.get_all("Reply-To", [])]) if addr]
     e.return_path = parseaddr(str(msg.get("Return-Path", "") or ""))[1]
     e.auth_results = [str(v) for v in msg.get_all("Authentication-Results", [])]

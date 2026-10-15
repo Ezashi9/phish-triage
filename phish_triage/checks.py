@@ -41,6 +41,10 @@ BRANDS: dict[str, set[str]] = {
     "ups": {"ups.com"},
     "usps": {"usps.com"},
     "steam": {"steampowered.com", "steamcommunity.com"},
+    "mcafee": {"mcafee.com"},
+    "norton": {"norton.com", "nortonlifelock.com", "gen.digital"},
+    "geek squad": {"bestbuy.com", "geeksquad.com"},
+    "trust wallet": {"trustwallet.com"},
 }
 # Domains of the brands' own names, for lookalike checks ("paypa1.com" vs "paypal").
 BRAND_LABELS = {d.split(".")[0] for doms in BRANDS.values() for d in doms if len(d.split(".")[0]) >= 5}
@@ -58,7 +62,18 @@ PRESSURE_PHRASES = [
     r"update (your )?(payment|billing)", r"within (24|48) hours", r"click (here|below|the link)",
     r"mailbox (is )?(full|almost full)", r"(password|account) (will )?expire", r"(gift card|wire transfer|bitcoin)",
     r"(urgent|immediate) action", r"you have (won|been selected)", r"(failed|pending) (delivery|payment)",
+    # German, Portuguese and Spanish equivalents seen in real samples
+    r"(ihr|dein) konto", r"abgelaufen", r"jetzt (bestätigen|verifizieren|aktualisieren)", r"gesperrt",
+    r"sua conta", r"(atualize|confirme) (seus|sua|os)", r"bloquead[oa]", r"su cuenta", r"verifique",
 ]
+LURE_PHRASES = [
+    r"free spins", r"freispiele", r"casino", r"jackpot", r"\bbonus\b", r"claim (your|now)",
+    r"(subscription|protection|antivirus) (has )?(expired|expires|renewal)", r"(seed|recovery) phrase",
+    r"(crypto|bitcoin|wallet) (reward|airdrop|bonus)", r"\bairdrop\b", r"(prize|winner|congratulations)",
+]
+# Top-level domains that abuse researchers (e.g. Spamhaus) repeatedly list as heavily used for spam and phishing.
+HIGH_ABUSE_TLDS = {"icu", "top", "xyz", "site", "online", "fit", "click", "link", "work", "rest", "buzz",
+                   "cfd", "sbs", "cyou", "monster", "quest", "bond", "lat", "shop", "live"}
 
 
 @dataclass
@@ -112,8 +127,8 @@ def check_authentication(e: Email) -> list[Finding]:
         out.append(Finding("auth", 10, "DKIM signature failed: the message may have been altered or forged"))
     if results.get("dkim") == "none" and results.get("spf") in (None, "none", "neutral"):
         out.append(Finding("auth", 5, "No DKIM signature and no SPF result: the sender is unauthenticated"))
-    if results.get("dmarc") == "pass":
-        out.append(Finding("auth", -10, "DMARC passed: the message really came from the domain it claims"))
+    # No credit for passing: SPF/DKIM/DMARC prove which domain sent the email, not that the domain is honest.
+    # In testing, most missed phishing passed all three from attacker-owned domains.
     return out
 
 
@@ -225,8 +240,36 @@ def check_language(e: Email) -> list[Finding]:
     return [Finding("language", min(5 * len(hits), 20), f"Pressure or credential language ({len(hits)} pattern(s)), e.g. urgency, account threats, payment requests")]
 
 
+def check_body_impersonation(e: Email) -> list[Finding]:
+    """The email talks about a brand, but neither the sender nor any link belongs to that brand."""
+    text = f"{e.subject} {e.text} {re.sub(r'<[^>]+>', ' ', e.html)}"
+    mentioned = _brands_in(text) - _brands_in(e.from_name or "")
+    hosts = {l.host for l in e.links if l.host} | {e.from_domain}
+    for brand in sorted(mentioned):
+        if not any(_brand_owned(h, brand) for h in hosts if h):
+            return [Finding("impersonation", 20, f"Mentions '{brand}' but neither the sender nor any link belongs to {brand}")]
+    return []
+
+
+def check_lures(e: Email) -> list[Finding]:
+    text = f"{e.subject} {e.text} {re.sub(r'<[^>]+>', ' ', e.html)}".lower()
+    hits = [p for p in LURE_PHRASES if re.search(p, text)]
+    if not hits:
+        return []
+    return [Finding("lure", min(10 * len(hits), 20), f"Classic scam lure ({len(hits)} pattern(s)), e.g. prizes, casino bonuses, expired antivirus, crypto rewards")]
+
+
+def check_abused_tlds(e: Email) -> list[Finding]:
+    hosts = [e.from_domain] + [l.host for l in e.links if l.host]
+    bad = sorted({h.rsplit(".", 1)[-1] for h in hosts if h and h.rsplit(".", 1)[-1] in HIGH_ABUSE_TLDS})
+    if not bad:
+        return []
+    return [Finding("tld", 10, f"Uses domain ending(s) {', '.join('.' + t for t in bad)}, heavily abused for spam and phishing")]
+
+
 def defang(value: str) -> str:
     return value.replace("http", "hxxp").replace(".", "[.]")
 
 
-ALL_CHECKS = [check_authentication, check_sender, check_links, check_attachments, check_language]
+ALL_CHECKS = [check_authentication, check_sender, check_body_impersonation, check_links, check_attachments,
+              check_language, check_lures, check_abused_tlds]
