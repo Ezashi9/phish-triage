@@ -1,0 +1,49 @@
+{
+  "phishing": {
+    "verdicts": {
+      "likely safe": 179,
+      "phishing": 35,
+      "suspicious": 86
+    },
+    "checks": {
+      "lookalike": 52,
+      "auth": 143,
+      "links": 76,
+      "sender": 126,
+      "language": 45,
+      "impersonation": 8,
+      "attachment": 1
+    },
+    "errors": 0,
+    "total": 300
+  },
+  "legitimate": {
+    "verdicts": {
+      "likely safe": 2483,
+      "suspicious": 16,
+      "phishing": 1
+    },
+    "checks": {
+      "sender": 1593,
+      "links": 15,
+      "language": 7,
+      "lookalike": 7
+    },
+    "errors": 0,
+    "total": 2500
+  },
+  "manifest": {
+    "phishing": {
+      "repo": "rf-peixoto/phishing_pot",
+      "commit": "2933c0341b1248678c1e246b36d352add2edf0f1",
+      "total_in_repo": 12271,
+      "sample": 300,
+      "seed": 2026,
+      "truncated_tree": false
+    },
+    "legitimate": {
+      "source": "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham.tar.bz2",
+      "messages": 2500
+    }
+  }
+}
